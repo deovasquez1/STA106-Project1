@@ -1,0 +1,44 @@
+---
+title: "STA 106 Project 1"
+author: "Group 13"
+date: "2024-02-03"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(include = FALSE)
+```
+
+```{r, warning=FALSE}
+library(pwr)
+library(ggplot2)
+```
+
+```{r}
+# Read in data
+senic = read.csv("senic.csv")
+head(senic)
+```
+
+
+# Introduction
+
+# Exploratory Data Analysis
+
+# Diagnostics
+
+# ANOVA
+
+# Confidence Interval
+
+# Discussion
+
+# Conclusion
+
+
+# Appendix
+
+```{r ref.label=knitr::all_labels(), echo=TRUE, eval=FALSE}
+```
+
