@@ -13,6 +13,7 @@ knitr::opts_chunk$set(echo = FALSE)
 library(pwr)
 library(ggplot2)
 library(dplyr)
+library(kableExtra)
 ```
 
 ```{r}
@@ -30,15 +31,34 @@ senic = read.csv("senic.csv")
 # Exploratory Data Analysis
 
 ```{r}
-# Boxplot of means
-senic %>% 
-  ggplot(aes(x = Region, y = Length)) + 
-  geom_boxplot() + 
-  labs(x = "Region", 
-       y = "Length (days)", 
-       title = "Length of Hospital Stay by Region") +
-  theme(plot.title = element_text(hjust = 0.5))
 
+# Summary
+
+ggplot(senic, aes(x = Length, fill = Region)) +
+  geom_histogram(binwidth = 0.5, alpha = 0.7, position = "identity") +
+  facet_wrap(~ Region) +
+  labs(title = "Histogram of Length by Regions",
+       x = "Length",
+       y = "Count")
+ggplot(senic, aes(x=Region, y=Length, fill=Region)) + 
+  geom_boxplot() +
+  ggtitle("Length of Stay by Region") +
+  xlab("Region") +
+  ylab("Length of Stay (days)")
+library(dplyr)
+summary_by_region <- senic %>%
+  group_by(Region) %>%
+  summarise(Mean_Length = mean(Length, na.rm = TRUE),
+            SD_Length = sd(Length, na.rm = TRUE)) %>%
+  arrange(Region)
+summary_by_region
+summary_stats <- summary(senic)
+summary_table <- data.frame(
+  Statistic = c("Min", "1st Qu.", "Median", "Mean", "3rd Qu.", "Max"),
+  Length = c(6.7, 8.33, 9.415, 9.637, 10.533, 19.56),
+  ei = c(-3.16429, -1.05192, -0.05643, 0, 0.71278, 8.36571)
+)
+summary_table
 ```
 
 
@@ -49,6 +69,8 @@ senic %>%
 - Isabella
 
 ```{r}
+# Diagnostics
+
 #outliers
 CO3 = which(senic$Region=="NE" & senic$Length > 15)
 the.model = lm(Length ~ Region,data = senic)
@@ -67,7 +89,6 @@ CO.rij = which(abs(rij) > t.cutoff)
 outliers = CO3
 new.data = senic[-outliers,]
 new.model = lm(Length ~ Region,data = new.data)
-
 ``` 
 
 ```{r}
@@ -95,6 +116,50 @@ p.val
 # Analysis
 
 ## ANOVA
+
+```{r}
+#The ANOVA table 
+the.model=lm(Length~ Region,data=senic) 
+anova.table=anova(the.model) 
+options(knitr.kable.NA = '')
+knitr::kable(anova.table, format = "pandoc", caption = "ANOVA table")
+```
+```{r}
+# Power 
+
+group.means = by(senic$Length,senic$Region,mean)
+group.nis = by(senic$Length,senic$Region,length) 
+the.model = lm(Length ~ Region, data = senic) 
+anova.table = anova(the.model) 
+MSE = anova.table[2,3]
+
+overall.mean = sum(group.means*group.nis)/sum(group.nis)
+effect.size = sqrt( sum( group.nis/sum(group.nis) *(group.means -overall.mean)^2 )/MSE)
+
+give.me.power = function(ybar,ni,MSE,alpha){
+a = length(ybar) # Finds a
+nt = sum(ni) #Finds the overall sample size
+overall.mean = sum(ni*ybar)/nt # Finds the overall mean
+phi = (1/sqrt(MSE))*sqrt( sum(ni*(ybar - overall.mean)^2)/a) #Finds the books value of phi
+phi.star = a *phi^2 #Finds the value of phi we will use for R
+Fc = qf(1-alpha,a-1,nt-a) #The critical value of F, use in R’s function
+power = 1 - pf(Fc, a-1, nt-a, phi.star)# The power, calculated using a non-central F
+return(power)
+}
+
+the.power = give.me.power(group.means,group.nis,MSE,0.05)
+the.power
+
+
+desired.power = 0.95
+pwr.anova.test(k = 4, f = effect.size, sig.level = alpha, power = desired.power)
+sample_size = data.frame(c(k=4,n=15.78173,f=0.5392097,sig.level=0.05,power=0.95))
+sample_size = round(sample_size, digits=4)
+colnames(sample_size) = "Sample Size Needed"
+sample_size
+```
+
+
 
 ## Confidence Interval
 
